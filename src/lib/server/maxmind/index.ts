@@ -1,13 +1,25 @@
-import maxmind, { type CityResponse, type CountryResponse } from 'maxmind';
+import maxmind, { type CityResponse, type CountryResponse, type Reader } from 'maxmind';
 
-let lookup = await maxmind.open('maxmind/geolite2-city.mmdb');
+let lookup: Reader<CityResponse> | null = null;
+let attempted = false;
+
+async function getLookup(): Promise<Reader<CityResponse> | null> {
+	if (lookup) return lookup;
+	if (attempted) return null;
+	attempted = true;
+	try {
+		lookup = await maxmind.open<CityResponse>('maxmind/geolite2-city.mmdb');
+		return lookup;
+	} catch {
+		return null;
+	}
+}
 
 async function getLocation(ip?: string) {
-	if (!lookup) {
-		lookup = await maxmind.open('maxmind/geolite2-city.mmdb');
-	}
 	if (!ip || ip.trim() === '') return null;
-	const data = lookup.get(ip);
+	const reader = await getLookup();
+	if (!reader) return null;
+	const data = reader.get(ip);
 	if (data === null) return null;
 	const city = (data as CityResponse).city?.names.en;
 	const region = (data as CityResponse).subdivisions?.map((subdiv) => subdiv.names.en).join(' / ');

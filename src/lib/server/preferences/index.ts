@@ -18,8 +18,12 @@ class Preferences {
 		return parsePreferences(pref);
 	}
 	initData = async () => {
-		const users = await db.query.user.findMany({ columns: { id: true } });
-		users.map(({ id }) => this.sync(id));
+		try {
+			const users = await db.query.user.findMany({ columns: { id: true } });
+			users.map(({ id }) => this.sync(id));
+		} catch (error) {
+			if (CONSTANTS.DEBUG) console.error('[preferences]', 'initData failed', error);
+		}
 	};
 	set(payload: unknown, userId: string) {
 		try {
