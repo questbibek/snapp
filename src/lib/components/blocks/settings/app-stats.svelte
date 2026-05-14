@@ -4,7 +4,7 @@
 	import ComputerIcon from '@lucide/svelte/icons/computer';
 	import ContainerIcon from '@lucide/svelte/icons/container';
 	import CPUIcon from '@lucide/svelte/icons/cpu';
-	import GithubIcon from '@lucide/svelte/icons/github';
+	import GithubIcon from '@lucide/svelte/icons/code';
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 	import LoaderIcon from '@lucide/svelte/icons/loader';
 	import MemoryStickIcon from '@lucide/svelte/icons/memory-stick';
