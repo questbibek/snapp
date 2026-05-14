@@ -18,7 +18,6 @@ import { APIError, generateId, } from 'better-auth';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthMiddleware } from 'better-auth/api';
-import { createAuthMiddleware } from 'better-auth/api';
 import {
 	admin,
 	apiKey,
