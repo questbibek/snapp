@@ -1,0 +1,22 @@
+name: Deploy Snapp
+
+on:
+  push:
+    branches:
+      - beta-version-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 5.223.61.220
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/snapp
+            git pull origin beta-version-1
+            docker compose up -d --build
+            docker image prune -f
