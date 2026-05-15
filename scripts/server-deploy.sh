@@ -174,6 +174,11 @@ server {
     ssl_certificate ${cert_dir}/fullchain.pem;
     ssl_certificate_key ${cert_dir}/privkey.pem;
     client_max_body_size 25m;
+    # SvelteKit emits a large Link: header (module preloads); default
+    # proxy_buffer_size (4-8k) rejects it with 502.
+    proxy_buffer_size 16k;
+    proxy_buffers 8 16k;
+    proxy_busy_buffers_size 32k;
     location / {
         proxy_pass http://127.0.0.1:${APP_PORT};
         proxy_http_version 1.1;
