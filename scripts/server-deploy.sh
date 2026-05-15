@@ -59,7 +59,11 @@ smtp:
   enabled: false
 EOF
 
-[ -f config/oauth.json ] || echo '[]' > config/oauth.json
+# oauth.json must be a JSON array — genericOAuth plugin calls .map() on it.
+# An empty object ({}) crashes the auth init.
+if [ ! -f config/oauth.json ] || ! head -c1 config/oauth.json | grep -q '\['; then
+  echo '[]' > config/oauth.json
+fi
 
 step "Writing .env (no ORIGIN — let SvelteKit derive per request)"
 if [ ! -f .env ] || ! grep -q '^BETTER_AUTH_SECRET=' .env; then
