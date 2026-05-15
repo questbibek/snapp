@@ -44,10 +44,10 @@ export const init = async () => {
 		console.log('[init] DB: Running migrations...');
 		console.time('[init] Migrations...');
 		try {
-			execSync('bun run db:generate', { stdio: 'ignore' });
-			execSync('bun run db:migrate', { stdio: 'ignore' });
-		} catch {
-			//
+			execSync('npx drizzle-kit push --force', { stdio: 'inherit' });
+		} catch (e) {
+			console.error('[init] Migration failed', e);
+			process.exit(1);
 		}
 		console.timeEnd('[init] Migrations...');
 	}
