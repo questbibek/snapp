@@ -115,6 +115,31 @@ step "Writing nginx site (reusing existing Let's Encrypt certs)"
 ALL_DOMAINS=("${PRIMARY_DOMAIN}" "${EXTRA_DOMAINS[@]}")
 SERVER_NAMES_80="${PRIMARY_DOMAIN} www.${PRIMARY_DOMAIN} ${EXTRA_DOMAINS[*]}"
 
+find_cert_dir() {
+  local target="$1"
+  local dir
+  for dir in /etc/letsencrypt/live/*/; do
+    [ -f "${dir}fullchain.pem" ] || continue
+    if openssl x509 -in "${dir}fullchain.pem" -noout -ext subjectAltName 2>/dev/null \
+        | grep -qiE "DNS:${target}(,|$)"; then
+      echo "${dir%/}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+for d in "${ALL_DOMAINS[@]}"; do
+  if ! find_cert_dir "${d}" >/dev/null; then
+    echo "==> Obtaining Let's Encrypt cert for ${d}"
+    certbot certonly --nginx \
+      -d "${d}" \
+      --email "${ADMIN_EMAIL}" \
+      --agree-tos --non-interactive --keep-until-expiring \
+      || echo "WARNING: certbot failed for ${d}. Check DNS A record points to this server." >&2
+  fi
+done
+
 {
   cat <<EOF
 server {
@@ -124,20 +149,25 @@ server {
 }
 EOF
   for d in "${ALL_DOMAINS[@]}"; do
-    if [ ! -f "/etc/letsencrypt/live/${d}/fullchain.pem" ]; then
-      echo "WARNING: no cert for ${d}, skipping its 443 server block. Run certbot --nginx -d ${d} after." >&2
+    cert_dir="$(find_cert_dir "${d}" || true)"
+    if [ -z "${cert_dir}" ]; then
+      echo "WARNING: no cert covers ${d}; skipping its 443 server block. Run: certbot --nginx -d ${d}" >&2
       continue
     fi
     extra_name=""
     if [ "${d}" = "${PRIMARY_DOMAIN}" ]; then
-      extra_name="www.${PRIMARY_DOMAIN}"
+      # Only add www if the same cert also covers it
+      if openssl x509 -in "${cert_dir}/fullchain.pem" -noout -ext subjectAltName 2>/dev/null \
+          | grep -qiE "DNS:www\.${PRIMARY_DOMAIN}(,|$)"; then
+        extra_name="www.${PRIMARY_DOMAIN}"
+      fi
     fi
     cat <<EOF
 server {
     listen 443 ssl http2;
     server_name ${d} ${extra_name};
-    ssl_certificate /etc/letsencrypt/live/${d}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${d}/privkey.pem;
+    ssl_certificate ${cert_dir}/fullchain.pem;
+    ssl_certificate_key ${cert_dir}/privkey.pem;
     client_max_body_size 25m;
     location / {
         proxy_pass http://127.0.0.1:${APP_PORT};
@@ -160,7 +190,8 @@ nginx -t
 systemctl reload nginx
 
 step "Building and starting Snapp (this takes a few minutes)"
-docker compose up -d --build
+# Explicit -f because the repo also ships a dev-only compose.yaml.
+docker compose -f docker-compose.yml up -d --build
 
 step "Done. Tailing logs — capture the admin password line."
 echo
