@@ -5,6 +5,7 @@ COPY ./package.json ./
 
 RUN bun install
 COPY . .
+RUN mkdir -p maxmind
 
 ENV PUBLIC_VERSION=beta-1.0.0
 ENV SNAPP_DEBUG=true
@@ -17,7 +18,7 @@ FROM node:25-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=1000
+ENV PORT=3000
 
 COPY --from=build /app/build ./build
 COPY --from=build /app/package.json ./
@@ -33,8 +34,8 @@ RUN npm install --omit=dev --legacy-peer-deps
 
 ENV PUBLIC_VERSION=beta-1.0.0
 ENV SNAPP_DEBUG=false
-ENV PORT=1000
+ENV PORT=3000
 
-EXPOSE 1000
+EXPOSE 3000
 
 CMD ["node", "-r", "dotenv/config", "./build"]
