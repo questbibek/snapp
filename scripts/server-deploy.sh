@@ -23,8 +23,9 @@ if [ -d /opt/kutt ]; then
 fi
 rm -f /etc/nginx/sites-enabled/kutt /etc/nginx/sites-available/kutt
 
-step "Stopping any stale Snapp containers"
-docker rm -f snapp snapp-db 2>/dev/null || true
+step "Stopping any stale Snapp containers and volumes"
+docker ps -a --filter "name=snapp" -q | xargs -r docker rm -f
+docker volume ls -q --filter "name=snapp" | xargs -r docker volume rm 2>/dev/null || true
 
 step "Ensuring /opt/snapp is on the latest beta-version-1"
 [ -d "$INSTALL_DIR" ] || { echo "$INSTALL_DIR missing — clone the fork first." >&2; exit 1; }
